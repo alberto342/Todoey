@@ -12,20 +12,17 @@ class TodoListViewController: UITableViewController {
     
     var itemArray = [Item]()
     
-    let defaults = UserDefaults.standard
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
 
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let newItem = Item()
-        newItem.title = "Find Me"
-        itemArray.append(newItem)
+        loadItems()
         
         // Do any additional setup after loading the view, typically from a nib.
-        if let items = defaults.array(forKey: "TodoListArray") as? [Item] {
-            itemArray = items
+//        if let items = defaults.array(forKey: "TodoListArray") as? [Item] {
+//            itemArray = items
         }
-    }
     
     //MARK - TableView Database Methods
     
@@ -40,16 +37,7 @@ class TodoListViewController: UITableViewController {
         
         cell.textLabel?.text = item.title
         
-        
-        
         cell.accessoryType = item.done ? .checkmark : .none
-        
-//        if item.done == true {
-//            cell.accessoryType = .checkmark
-//        } else {
-//            cell.accessoryType = .none
-//        }
-//
         
         return cell
     }
@@ -65,8 +53,8 @@ class TodoListViewController: UITableViewController {
 //        } else {
 //            itemArray[indexPath.row].done = false
 //        }
-       
-       tableView.reloadData()
+        
+        savaItemsData()
         
         tableView.deselectRow(at: indexPath, animated: true)
     }
@@ -86,16 +74,39 @@ class TodoListViewController: UITableViewController {
             newItem.title = textField.text!
             self.itemArray.append(newItem)
             
-            self.defaults.set(self.itemArray, forKey: "TodoListArray")
-            
-            self.tableView.reloadData()
+            self.savaItemsData()
         }
+        
         alert.addTextField { (alertTextFild) in
             alertTextFild.placeholder = "Create new item"
             textField = alertTextFild
         }
         alert.addAction(action)
         present(alert, animated: true, completion: nil)
+    }
+    
+    //MARK - Model manupulation Methods
+    func savaItemsData() {
+        let encoder = PropertyListEncoder()
+        
+        do {
+            let data = try encoder.encode(itemArray)
+            try data.write(to: dataFilePath!)
+        } catch {
+            print("Error encoding item array, \(error)")
+        }
+        tableView.reloadData()
+    }
+    
+    func loadItems() {
+        if let data = try? Data(contentsOf: dataFilePath!) {
+            let decoder = PropertyListDecoder()
+            do {
+                itemArray = try decoder.decode([Item].self, from: data)
+            } catch {
+                print("Error decording item array, \(error)")
+            }
+        }
     }
     
 }
